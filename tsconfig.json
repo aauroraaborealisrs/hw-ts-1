@@ -11,7 +11,10 @@
     "forceConsistentCasingInFileNames": true, // чтобы не было проблем с регистром файлов
     "noUnusedLocals": true, // ругаться если есть неиспользуемые переменные
     "noUnusedParameters": true, // ругаться если есть неиспользуемые аргументы
-    "isolatedModules": true, // чтобы каждый файл компилился независимо 
-    "declaration": true  // для автогена .d.ts
-   }
+    "isolatedModules": true, // чтобы каждый файл компилился независимо
+    "declaration": true, // для автогена .d.ts
+    "outDir": "./dist", // куда складывать скомпилированные файлы
+    "rootDir": "./src" // где лежат исходные ts файлы
+  },
+  "include": ["src/**/*"] // брать только файлы из src
 }
