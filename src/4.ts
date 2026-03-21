@@ -15,8 +15,8 @@ type TypeMap = {
 type Schema = Record<string, keyof TypeMap>;
 
 type FromSchema<T extends Schema> = {
-  -readonly [K in keyof T]: TypeMap[T[K]];
-}; //чтоб не ломалось прииas const
+  [K in keyof T]: TypeMap[T[K]];
+}; // ts сам подхватит литералы из схемы, если передать объект inline
 
 function isValidType(value: unknown, expectedType: keyof TypeMap): boolean {
   switch (expectedType) {
@@ -44,8 +44,7 @@ function typedObject<T extends Schema>(schema: T): FromSchema<T> {
         throw new TypeError(`Свойство "${String(prop)}" не описано в схеме`);
       }
 
-      const typedProp = prop as keyof T;
-      const expectedType = schema[typedProp];
+      const expectedType = schema[prop];
 
       if (!isValidType(value, expectedType)) {
         throw new TypeError(
@@ -53,16 +52,10 @@ function typedObject<T extends Schema>(schema: T): FromSchema<T> {
         );
       }
 
-      return Reflect.set(
-        obj,
-        prop,
-        value as FromSchema<T>[typeof typedProp],
-        receiver,
-      );
+      return Reflect.set(obj, prop, value, receiver);
     },
   });
 }
-
 
 //тесты
 
@@ -70,7 +63,7 @@ const profile = typedObject({
   name: "string",
   age: "number",
   isAdmin: "boolean",
-} as const);
+});
 
 // проверяем, что корректные значения спокойно записываются
 profile.name = "Alice";

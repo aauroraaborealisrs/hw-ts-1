@@ -2,43 +2,33 @@
 
 type PrimitiveArg = string | number;
 
-function memoize<
-  A extends PrimitiveArg[],
-  R
->(fn: (...args: A) => R) {
-  const cache = new Map<string, R>();
+// перегрузка 1 по ТЗ
+function memoize<A extends PrimitiveArg[], R>(fn: (...args: A) => R): (...args: A) => R;
+
+// перегрузка 2 общий вариант
+function memoize<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R;
+
+function memoize<A extends unknown[], R>(fn: (...args: A) => R) {
+  const RESULT = Symbol("result");
+  const root = new Map<unknown, unknown>();
 
   return function (this: unknown, ...args: A): R {
-    const key = JSON.stringify(args);
+    let current: Map<unknown, unknown> = root;
 
-    if (cache.has(key)) {
-      console.log("привет из кэша");
-      return cache.get(key)!;
+    for (const arg of args) {
+      if (!current.has(arg)) {
+        current.set(arg, new Map());
+      }
+      current = current.get(arg) as Map<unknown, unknown>;
     }
 
-    const result = fn.apply(this, args) as R; // apply тут нормально кастую
-    cache.set(key, result);
-
-    return result;
-  };
-}
-
-// тут я опять занялась самодеятельностью и решила попытаться сделать более широкий вариант
-
-// отдельно вытаскиваю аргументы и результат, так ts не ломается на объектах и массивах
-function memoize2<A extends unknown[], R>(fn: (...args: A) => R) {
-  const cache = new Map<string, R>();
-
-  return function (this: unknown, ...args: A): R {
-    const key = JSON.stringify(args);
-
-    if (cache.has(key)) {
+    if (current.has(RESULT)) {
       console.log("привет из кэша");
-      return cache.get(key)!;
+      return current.get(RESULT) as R;
     }
 
-    const result = fn.apply(this, args) as R;
-    cache.set(key, result);
+    const result = fn.apply(this, args);
+    current.set(RESULT, result);
 
     return result;
   };
@@ -89,7 +79,7 @@ const describeUser = (user: { name: string; age: number }): string => {
   return `${user.name} (${user.age})`;
 };
 
-const memoDescribeUser = memoize2(describeUser);
+const memoDescribeUser = memoize(describeUser);
 
 console.log("Первый вызов describeUser:", memoDescribeUser({ name: "Anna", age: 25 }));
 console.log("Второй вызов describeUser:", memoDescribeUser({ name: "Anna", age: 25 }));
@@ -101,7 +91,7 @@ const sumArray = (numbers: number[]): number => {
   return numbers.reduce((acc, item) => acc + item, 0);
 };
 
-const memoSumArray = memoize2(sumArray);
+const memoSumArray = memoize(sumArray);
 
 console.log("Первый вызов sumArray:", memoSumArray([1, 2, 3]));
 console.log("Второй вызов sumArray:", memoSumArray([1, 2, 3]));
@@ -117,7 +107,7 @@ const buildMessage = (
   return `${user.name}: ${tags.join(", ")} | admin=${isAdmin}`;
 };
 
-const memoBuildMessage = memoize2(buildMessage);
+const memoBuildMessage = memoize(buildMessage);
 
 console.log(
   "Первый вызов buildMessage:",
@@ -144,7 +134,7 @@ const calculator = {
   },
 };
 
-calculator.calc = memoize2(calculator.calc);
+calculator.calc = memoize(calculator.calc);
 
 console.log("Первый вызов calc:", calculator.calc(5));
 console.log("Второй вызов calc:", calculator.calc(5));
